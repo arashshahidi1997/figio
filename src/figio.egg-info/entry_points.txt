@@ -1,0 +1,2 @@
+[console_scripts]
+figio = figio.cli:main

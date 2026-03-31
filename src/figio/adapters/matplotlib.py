@@ -177,9 +177,9 @@ def _prefix_ids(svg: str, prefix: str) -> str:
         lambda m: f'xlink:href="#{prefix}_{m.group(1)}"',
         svg,
     )
-    # Update href="#..." references (SVG 2)
+    # Update href="#..." references (SVG 2), but not xlink:href (already handled)
     svg = re.sub(
-        r'href="#([^"]+)"',
+        r'(?<!xlink:)href="#([^"]+)"',
         lambda m: f'href="#{prefix}_{m.group(1)}"',
         svg,
     )
