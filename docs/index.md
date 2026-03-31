@@ -55,7 +55,10 @@ figio validate figurespec.yaml --target nature_single_column
 ## Documentation
 
 - [Quick Start](guide/quickstart.md) — step-by-step first figure
+- [Multi-Panel Tutorial](guide/tutorial-multipanel.md) — 2×2 grid with constraints, annotations, and journal target
 - [Spec Format Reference](guide/spec-format.md) — complete YAML schema
+- [Target Profiles](guide/targets.md) — journal requirements, validation workflow, custom profiles
 - [Panel Adapters](guide/adapters.md) — writing panel scripts
 - [CLI Reference](reference/cli.md) — command-line interface
 - [MCP Tools](reference/mcp-tools.md) — agent interface
+- [Troubleshooting & FAQ](guide/troubleshooting.md) — common errors and fixes

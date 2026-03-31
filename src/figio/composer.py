@@ -87,20 +87,33 @@ def compose(
     all_svgs = [p.svg for p in panels.values()]
     merged_defs = merge_defs(all_svgs)
 
-    # 5. Build panel groups
+    # 4b. Inject arrow marker def if any arrow annotations exist
+    if any(a.type == AnnotationType.arrow for a in annotations):
+        merged_defs += "\n" + _build_marker_defs()
+
+    # 5. Build panel groups using nested <svg> elements for correct viewBox mapping
     panel_groups: list[str] = []
     for panel_id, pos in positions.items():
-        panel_svg = extract_svg_content(panels[panel_id].svg)
-        # Scale panel content to fit allocated cell
-        scale_x = pos.width / panels[panel_id].bbox_mm[2] if panels[panel_id].bbox_mm[2] > 0 else 1.0
-        scale_y = pos.height / panels[panel_id].bbox_mm[3] if panels[panel_id].bbox_mm[3] > 0 else 1.0
-        scale = min(scale_x, scale_y)
+        if panel_id not in panels:
+            continue  # skip metadata entries like __colorbar
+        panel = panels[panel_id]
+        panel_svg = extract_svg_content(panel.svg)
 
+        # Use the original viewBox (internal coordinate system) if available,
+        # otherwise fall back to bbox_mm (which may not match internal coords)
+        if panel.viewbox:
+            vb = f"{panel.viewbox[0]} {panel.viewbox[1]} {panel.viewbox[2]} {panel.viewbox[3]}"
+        else:
+            vb = f"0 0 {panel.bbox_mm[2]:.2f} {panel.bbox_mm[3]:.2f}"
+
+        # Nested <svg> with viewBox handles coordinate mapping natively
         group = (
-            f'  <g id="panel-{panel_id}" '
-            f'transform="translate({pos.x:.2f}, {pos.y:.2f}) scale({scale:.4f})">\n'
+            f'  <svg id="panel-{panel_id}" '
+            f'x="{pos.x:.2f}" y="{pos.y:.2f}" '
+            f'width="{pos.width:.2f}" height="{pos.height:.2f}" '
+            f'viewBox="{vb}" preserveAspectRatio="xMidYMid meet">\n'
             f'    {panel_svg}\n'
-            f'  </g>'
+            f'  </svg>'
         )
         panel_groups.append(group)
 
@@ -243,6 +256,52 @@ def _apply_constraints(
             for p in affected:
                 positions[p].height = max_bottom - positions[p].y
 
+        elif constraint.type == ConstraintType.shared_colorbar:
+            # Reserve space on the right for a shared colorbar.
+            # Shrink each affected panel by a fraction and place a
+            # colorbar-width column to the right of the rightmost panel.
+            colorbar_frac = 0.08  # 8% of panel width
+            rightmost = max(positions[p].x + positions[p].width for p in affected)
+            max_w = max(positions[p].width for p in affected)
+            colorbar_w = max_w * colorbar_frac
+            for p in affected:
+                positions[p].width -= colorbar_w
+            # Store colorbar region as a BBox keyed "__colorbar"
+            top_y = min(positions[p].y for p in affected)
+            bot_y = max(positions[p].y + positions[p].height for p in affected)
+            # Recalculate rightmost after shrinking
+            new_rightmost = max(
+                positions[p].x + positions[p].width for p in affected
+            )
+            gap = 1.0  # small gap before colorbar
+            positions["__colorbar"] = BBox(
+                x=new_rightmost + gap,
+                y=top_y,
+                width=colorbar_w,
+                height=bot_y - top_y,
+            )
+            warnings.append(
+                "shared_colorbar: space reserved; adapter must provide colorbar SVG content"
+            )
+
+
+# ---------------------------------------------------------------------------
+# Arrow marker defs
+# ---------------------------------------------------------------------------
+
+
+def _build_marker_defs() -> str:
+    """Return an SVG ``<marker>`` definition for arrowhead endings.
+
+    The marker uses mm-scale coordinates to match the composed viewBox.
+    """
+    return (
+        '<marker id="arrowhead" markerWidth="4" markerHeight="3" '
+        'refX="4" refY="1.5" orient="auto" markerUnits="strokeWidth">'
+        '<path d="M0,0 L4,1.5 L0,3 Z" fill="black"/>'
+        '</marker>'
+    )
+
 
 # ---------------------------------------------------------------------------
 # Figure height computation
@@ -326,15 +385,31 @@ def _build_annotations(
                 )
 
         elif ann.type == AnnotationType.bracket:
-            # Bracket grouping panels — simplified as a line
+            # Square bracket grouping panels: vertical ends + horizontal bar
             if ann.start in positions and ann.end in positions:
                 p1 = positions[ann.start]
                 p2 = positions[ann.end]
-                y = min(p1.y, p2.y) - 3.0
+                tick = 2.0  # vertical tick height in mm
+                y_top = min(p1.y, p2.y) - 3.0
+                y_bottom = y_top + tick
+                x_left = p1.x
+                x_right = p2.x + p2.width
+                # Square bracket path: left tick down, across, right tick down
                 parts.append(
-                    f'    <path d="M{p1.x:.2f},{y:.2f} '
-                    f'L{p2.x + p2.width:.2f},{y:.2f}" '
+                    f'    <path d="M{x_left:.2f},{y_bottom:.2f} '
+                    f'L{x_left:.2f},{y_top:.2f} '
+                    f'L{x_right:.2f},{y_top:.2f} '
+                    f'L{x_right:.2f},{y_bottom:.2f}" '
                     f'stroke="black" stroke-width="0.5" fill="none"/>'
                 )
+                # Label text centered above the bracket
+                if ann.text:
+                    x_mid = (x_left + x_right) / 2
+                    y_text = y_top - 1.5
+                    parts.append(
+                        f'    <text x="{x_mid:.2f}" y="{y_text:.2f}" '
+                        f'font-size="{font_size:.1f}pt" text-anchor="middle">'
+                        f'{ann.text}</text>'
+                    )
 
     return "\n".join(parts)

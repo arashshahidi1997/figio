@@ -11,9 +11,7 @@ from __future__ import annotations
 
 import importlib.util
 import re
-import subprocess
 import sys
-import tempfile
 from contextlib import contextmanager
 from io import BytesIO
 from pathlib import Path
@@ -21,6 +19,7 @@ from typing import Any, Iterator
 
 from figio.adapters import PanelResult
 from figio.schema import PanelSpec, StyleSpec
+from figio.svg_utils import extract_viewbox, normalize_viewbox, prefix_ids
 
 
 class MatplotlibAdapter:
@@ -59,12 +58,14 @@ class MatplotlibAdapter:
 
         # Normalize SVG
         svg = _strip_mpl_boilerplate(svg)
-        svg = _prefix_ids(svg, panel_id)
-        svg = _normalize_viewbox(svg, bbox_mm[2], bbox_mm[3])
+        original_viewbox = extract_viewbox(svg)
+        svg = prefix_ids(svg, panel_id)
+        svg = normalize_viewbox(svg, bbox_mm[2], bbox_mm[3])
 
         return PanelResult(
             svg=svg,
             bbox_mm=bbox_mm,
+            viewbox=original_viewbox,
             anchors=anchors,
             semantic_ids=[f"{panel_id}_ax{i}" for i in range(len(fig.axes) if hasattr(fig, 'axes') else 0)],
         )
@@ -155,51 +156,6 @@ def _extract_anchors(fig: Any, panel_id: str) -> dict[str, tuple[float, float]]:
 # ---------------------------------------------------------------------------
 # SVG normalization
 # ---------------------------------------------------------------------------
-
-
-def _prefix_ids(svg: str, prefix: str) -> str:
-    """Prefix all ``id=`` and ``url(#...)`` references to avoid collisions."""
-    # Prefix id="..." attributes
-    svg = re.sub(
-        r'id="([^"]+)"',
-        lambda m: f'id="{prefix}_{m.group(1)}"',
-        svg,
-    )
-    # Update url(#...) references
-    svg = re.sub(
-        r'url\(#([^)]+)\)',
-        lambda m: f'url(#{prefix}_{m.group(1)})',
-        svg,
-    )
-    # Update xlink:href="#..." references
-    svg = re.sub(
-        r'xlink:href="#([^"]+)"',
-        lambda m: f'xlink:href="#{prefix}_{m.group(1)}"',
-        svg,
-    )
-    # Update href="#..." references (SVG 2), but not xlink:href (already handled)
-    svg = re.sub(
-        r'(?<!xlink:)href="#([^"]+)"',
-        lambda m: f'href="#{prefix}_{m.group(1)}"',
-        svg,
-    )
-    return svg
-
-
-def _normalize_viewbox(svg: str, width_mm: float, height_mm: float) -> str:
-    """Set the SVG viewBox and dimensions to mm units."""
-    # Replace or add viewBox
-    viewbox = f'0 0 {width_mm:.2f} {height_mm:.2f}'
-    if 'viewBox=' in svg:
-        svg = re.sub(r'viewBox="[^"]*"', f'viewBox="{viewbox}"', svg)
-    else:
-        svg = svg.replace("<svg ", f'<svg viewBox="{viewbox}" ', 1)
-
-    # Set width/height attributes to mm
-    svg = re.sub(r'width="[^"]*"', f'width="{width_mm:.2f}mm"', svg, count=1)
-    svg = re.sub(r'height="[^"]*"', f'height="{height_mm:.2f}mm"', svg, count=1)
-
-    return svg
 
 
 def _strip_mpl_boilerplate(svg: str) -> str:

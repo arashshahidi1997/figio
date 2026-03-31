@@ -127,4 +127,14 @@ target:
 |------|-------|----------|-----|
 | `nature_single_column` | 89mm | 5pt | 300 |
 | `nature_double_column` | 183mm | 5pt | 300 |
+| `science_single` | 55mm | 6pt | 300 |
+| `science_double` | 117mm | 6pt | 300 |
+| `pnas_single` | 87mm | 6pt | 300 |
+| `pnas_double` | 178mm | 6pt | 300 |
+| `elife` | 140mm | 7pt | 300 |
+| `plos_one` | 173mm | 8pt | 300 |
+| `cell_single` | 85mm | 5pt | 300 |
+| `cell_double` | 174mm | 5pt | 300 |
+| `ieee_single` | 88mm | 8pt | 300 |
+| `ieee_double` | 181mm | 8pt | 300 |
 | `default` | 170mm | 6pt | 150 |

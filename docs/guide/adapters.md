@@ -64,6 +64,83 @@ Before rendering, the adapter sets `matplotlib.rcParams` from the spec's StyleSp
 
 These are restored after rendering.
 
+## Script Adapter
+
+The Script adapter runs any program that can write an SVG file. This lets you use R, Julia, shell scripts wrapping Inkscape, or any other tool without adding Python bindings.
+
+### FigureSpec usage
+
+```yaml
+panels:
+  violin:
+    generator: script
+    source: panels/violin.R
+```
+
+### Script interface
+
+figio invokes the script as:
+
+```
+<interpreter> <script> --output <tmp>.svg --width-mm <float> --height-mm <float>
+```
+
+- `--output PATH` — the script **must** write a valid SVG to this path
+- `--width-mm` and `--height-mm` — dimension hints (the script may ignore them)
+
+For `.py` scripts, `sys.executable` is used as the interpreter. All other scripts are executed directly (they must be executable and have a `#!` shebang, or you can use a wrapper).
+
+### Minimal Python example
+
+```python
+#!/usr/bin/env python3
+# panels/violin.py
+import argparse
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", required=True)
+    parser.add_argument("--width-mm", type=float, default=80.0)
+    parser.add_argument("--height-mm", type=float, default=60.0)
+    args = parser.parse_args()
+
+    w, h = args.width_mm, args.height_mm
+    svg = f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}mm" height="{h}mm" viewBox="0 0 {w} {h}"><rect width="{w}" height="{h}" fill="none"/></svg>'
+    with open(args.output, "w") as fh:
+        fh.write(svg)
+
+if __name__ == "__main__":
+    main()
+```
+
+### Minimal R example
+
+```r
+#!/usr/bin/env Rscript
+# panels/violin.R
+library(svglite)
+args <- commandArgs(trailingOnly = TRUE)
+# parse --output, --width-mm, --height-mm ...
+svglite(output_path, width = width_mm / 25.4, height = height_mm / 25.4)
+# ... plotting code ...
+dev.off()
+```
+
+### Dimension inference
+
+The Script adapter reads `width` and `height` attributes from the SVG root element and converts them to mm using standard CSS units (`mm`, `pt`, `px`, unitless = px). If those attributes are absent it falls back to the `viewBox` dimensions (treated as pixels at 96 dpi). If no size information is present at all, a 100 × 80 mm default is used.
+
+### SVG normalization
+
+After the script exits, the adapter applies the same normalization as the Matplotlib adapter:
+
+1. **ID prefixing** — all `id=` attributes and `url(#…)` references are prefixed with the panel ID
+2. **viewBox normalization** — converted to millimeter units
+
+### Supported constraints
+
+`equal_height`, `equal_width`
+
 ## Writing a Custom Adapter
 
 To support a new backend, create a class implementing `PanelAdapter`:

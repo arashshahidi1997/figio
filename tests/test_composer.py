@@ -224,3 +224,107 @@ def test_empty_panels(style: StyleSpec, target: TargetProfile) -> None:
     result = compose({}, LayoutSpec(), [], style, target)
     assert "<svg" in result.svg
     assert result.height_mm == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Arrow marker tests
+# ---------------------------------------------------------------------------
+
+
+def test_arrow_annotation_has_marker_def(style: StyleSpec, target: TargetProfile) -> None:
+    """Arrow annotation produces SVG with both <line> and <marker> def."""
+    panels = {"a": _make_panel(40, 30, "a"), "b": _make_panel(40, 30, "b")}
+    layout = LayoutSpec(type=LayoutType.grid, rows=1, cols=2)
+    annotations = [
+        AnnotationSpec(type=AnnotationType.arrow, start="a", end="b"),
+    ]
+
+    result = compose(panels, layout, annotations, style, target)
+
+    assert 'marker-end="url(#arrowhead)"' in result.svg
+    assert '<marker id="arrowhead"' in result.svg
+    assert "<path" in result.svg  # triangle path inside marker
+
+
+def test_no_marker_def_without_arrows(style: StyleSpec, target: TargetProfile) -> None:
+    """No arrow annotations means no arrowhead marker injected."""
+    panels = {"a": _make_panel(40, 30, "a")}
+    layout = LayoutSpec(type=LayoutType.grid, rows=1, cols=1)
+
+    result = compose(panels, layout, [], style, target)
+
+    assert '<marker id="arrowhead"' not in result.svg
+
+
+# ---------------------------------------------------------------------------
+# Bracket annotation tests
+# ---------------------------------------------------------------------------
+
+
+def test_bracket_annotation_shape(style: StyleSpec, target: TargetProfile) -> None:
+    """Bracket annotation produces a bracket-shaped path, not just a line."""
+    panels = {"a": _make_panel(40, 30, "a"), "b": _make_panel(40, 30, "b")}
+    layout = LayoutSpec(type=LayoutType.grid, rows=1, cols=2)
+    annotations = [
+        AnnotationSpec(type=AnnotationType.bracket, start="a", end="b", text="Group"),
+    ]
+
+    result = compose(panels, layout, annotations, style, target)
+
+    # The bracket path should contain 4 points (L commands) forming a square bracket
+    # M(left,bottom) L(left,top) L(right,top) L(right,bottom)
+    assert result.svg.count(" L") >= 3  # at least 3 L segments in bracket path
+    assert ">Group</text>" in result.svg
+
+
+def test_bracket_no_text(style: StyleSpec, target: TargetProfile) -> None:
+    """Bracket without text still renders the bracket shape."""
+    panels = {"a": _make_panel(40, 30, "a"), "b": _make_panel(40, 30, "b")}
+    layout = LayoutSpec(type=LayoutType.grid, rows=1, cols=2)
+    annotations = [
+        AnnotationSpec(type=AnnotationType.bracket, start="a", end="b"),
+    ]
+
+    result = compose(panels, layout, annotations, style, target)
+
+    # Bracket path present, no label text
+    assert 'fill="none"' in result.svg
+    assert 'id="annotations"' in result.svg
+
+
+# ---------------------------------------------------------------------------
+# Shared colorbar constraint tests
+# ---------------------------------------------------------------------------
+
+
+def test_shared_colorbar_reserves_space(style: StyleSpec, target: TargetProfile) -> None:
+    """shared_colorbar constraint shrinks panels and reserves a colorbar region."""
+    panels = {
+        "a": _make_panel(40, 30, "a"),
+        "b": _make_panel(40, 30, "b"),
+    }
+    layout = LayoutSpec(
+        type=LayoutType.grid,
+        rows=1,
+        cols=2,
+        constraints=[
+            LayoutConstraint(type=ConstraintType.shared_colorbar, panels=["a", "b"])
+        ],
+    )
+
+    result = compose(panels, layout, [], style, target)
+
+    # A __colorbar BBox should exist in panel_positions
+    assert "__colorbar" in result.panel_positions
+    cbar = result.panel_positions["__colorbar"]
+    assert cbar.width > 0
+    assert cbar.height > 0
+
+    # Panels should be narrower than they would be without the constraint
+    # Original col_width = (100 - 4) / 2 = 48.0
+    original_col_width = (target.figure_width_mm - style.panel_gap_mm) / 2
+    assert result.panel_positions["a"].width < original_col_width
+    assert result.panel_positions["b"].width < original_col_width
+
+    # Warning about adapter responsibility
+    assert any("shared_colorbar" in w for w in result.warnings)

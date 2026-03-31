@@ -159,6 +159,50 @@ def test_builtin_targets_complete() -> None:
     assert "nature_single_column" in BUILTIN_TARGETS
     assert "nature_double_column" in BUILTIN_TARGETS
     assert "default" in BUILTIN_TARGETS
+    # New profiles added in phase 2c
+    for name in (
+        "science_single", "science_double",
+        "pnas_single", "pnas_double",
+        "elife", "plos_one",
+        "cell_single", "cell_double",
+        "ieee_single", "ieee_double",
+    ):
+        assert name in BUILTIN_TARGETS, f"Missing built-in profile: {name}"
+
+
+@pytest.mark.parametrize("name", [
+    "science_single", "science_double",
+    "pnas_single", "pnas_double",
+    "elife", "plos_one",
+    "cell_single", "cell_double",
+    "ieee_single", "ieee_double",
+])
+def test_new_profiles_resolve_by_name(name: str) -> None:
+    profile = resolve_target(name)
+    assert profile.name == name
+
+
+@pytest.mark.parametrize("name", [
+    "science_single", "science_double",
+    "pnas_single", "pnas_double",
+    "elife", "plos_one",
+    "cell_single", "cell_double",
+    "ieee_single", "ieee_double",
+])
+def test_new_profiles_reasonable_dimensions(name: str) -> None:
+    profile = resolve_target(name)
+    assert profile.figure_width_mm > 50.0
+    assert profile.dpi >= 150
+
+
+def test_elife_has_max_height() -> None:
+    profile = resolve_target("elife")
+    assert profile.max_height_mm == 225.0
+
+
+def test_colorblind_check_profiles() -> None:
+    for name in ("nature_single_column", "nature_double_column", "elife", "plos_one"):
+        assert resolve_target(name).colorblind_check is True
 
 
 # ---------------------------------------------------------------------------

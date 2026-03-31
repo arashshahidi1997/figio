@@ -17,7 +17,7 @@ from figio.composer import ComposedFigure, compose
 from figio.export import export_pdf, export_png
 from figio.schema import FigureSpec, Generator, StyleSpec
 from figio.targets import resolve_target
-from figio.validate import ValidationCheck, validate_figure
+from figio.validate import ValidationCheck, validate_figure, validate_png_dimensions
 
 
 class BuildResult(BaseModel):
@@ -145,6 +145,15 @@ def build(
     # Validate
     validation = validate_figure(composed, target)
 
+    # Post-export PNG dimension check
+    if png_path:
+        validation.append(validate_png_dimensions(
+            png_path,
+            target.figure_width_mm,
+            composed.height_mm,
+            target.dpi,
+        ))
+
     elapsed = time.monotonic() - t0
 
     return BuildResult(
@@ -165,7 +174,10 @@ def _get_adapter(generator: Generator):
     if generator == Generator.matplotlib:
         from figio.adapters.matplotlib import MatplotlibAdapter
         return MatplotlibAdapter()
+    if generator == Generator.script:
+        from figio.adapters.script import ScriptAdapter
+        return ScriptAdapter()
     raise ValueError(
         f"No adapter for generator {generator.value!r}. "
-        f"Currently supported: matplotlib"
+        f"Currently supported: matplotlib, script"
     )

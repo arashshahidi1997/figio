@@ -81,6 +81,60 @@ def make_svg_document(
     )
 
 
+def extract_viewbox(svg: str) -> tuple[float, float, float, float] | None:
+    """Extract the viewBox attribute from an SVG string.
+
+    Returns a 4-tuple ``(min_x, min_y, width, height)`` or ``None`` if absent.
+    """
+    m = re.search(r'viewBox="([^"]+)"', svg)
+    if m:
+        parts = m.group(1).split()
+        if len(parts) == 4:
+            return tuple(float(p) for p in parts)  # type: ignore[return-value]
+    return None
+
+
+def prefix_ids(svg: str, prefix: str) -> str:
+    """Prefix all ``id=`` and ``url(#...)`` references to avoid collisions."""
+    # Prefix id="..." attributes
+    svg = re.sub(
+        r'id="([^"]+)"',
+        lambda m: f'id="{prefix}_{m.group(1)}"',
+        svg,
+    )
+    # Update url(#...) references
+    svg = re.sub(
+        r'url\(#([^)]+)\)',
+        lambda m: f'url(#{prefix}_{m.group(1)})',
+        svg,
+    )
+    # Update xlink:href="#..." references
+    svg = re.sub(
+        r'xlink:href="#([^"]+)"',
+        lambda m: f'xlink:href="#{prefix}_{m.group(1)}"',
+        svg,
+    )
+    # Update href="#..." references (SVG 2), but not xlink:href (already handled)
+    svg = re.sub(
+        r'(?<!xlink:)href="#([^"]+)"',
+        lambda m: f'href="#{prefix}_{m.group(1)}"',
+        svg,
+    )
+    return svg
+
+
+def normalize_viewbox(svg: str, width_mm: float, height_mm: float) -> str:
+    """Set the SVG viewBox and dimension attributes to mm units."""
+    viewbox = f'0 0 {width_mm:.2f} {height_mm:.2f}'
+    if 'viewBox=' in svg:
+        svg = re.sub(r'viewBox="[^"]*"', f'viewBox="{viewbox}"', svg)
+    else:
+        svg = svg.replace("<svg ", f'<svg viewBox="{viewbox}" ', 1)
+    svg = re.sub(r'width="[^"]*"', f'width="{width_mm:.2f}mm"', svg, count=1)
+    svg = re.sub(r'height="[^"]*"', f'height="{height_mm:.2f}mm"', svg, count=1)
+    return svg
+
+
 def inject_style(svg: str, css: str) -> str:
     """Add a ``<style>`` element into the SVG's ``<defs>`` block.
 

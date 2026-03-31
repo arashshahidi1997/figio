@@ -1,0 +1,49 @@
+figure:
+  id: fig_multipanel
+  target: nature_double_column
+
+  panels:
+    line:
+      generator: matplotlib
+      source: panel_line.py
+
+    bar:
+      generator: matplotlib
+      source: panel_bar.py
+
+    heatmap:
+      generator: matplotlib
+      source: panel_heatmap.py
+
+    scatter:
+      generator: matplotlib
+      source: panel_scatter.py
+
+  layout:
+    type: grid
+    rows: 2
+    cols: 2
+    constraints:
+      - equal_height: [line, bar]
+      - equal_height: [heatmap, scatter]
+
+  annotations:
+    - type: panel_label
+      target: line
+      text: A
+    - type: panel_label
+      target: bar
+      text: B
+    - type: panel_label
+      target: heatmap
+      text: C
+    - type: panel_label
+      target: scatter
+      text: D
+    - type: caption
+      text: "Figure 1. Multi-panel figure demonstrating figio layout, constraints, and annotations. (A) Time-series signal. (B) Condition means ± SEM. (C) Correlation matrix. (D) Scatter plot with regression line."
+
+  style:
+    font_family: Helvetica
+    font_size_pt: 8
+    panel_gap_mm: 4

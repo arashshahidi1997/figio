@@ -9,13 +9,9 @@ import pytest
 mpl = pytest.importorskip("matplotlib")  # noqa: F841
 
 from figio.adapters import PanelResult
-from figio.adapters.matplotlib import (
-    MatplotlibAdapter,
-    _normalize_viewbox,
-    _prefix_ids,
-    _strip_mpl_boilerplate,
-)
+from figio.adapters.matplotlib import MatplotlibAdapter, _strip_mpl_boilerplate
 from figio.schema import Generator, PanelSpec, StyleSpec
+from figio.svg_utils import normalize_viewbox as _normalize_viewbox, prefix_ids as _prefix_ids
 
 
 @pytest.fixture

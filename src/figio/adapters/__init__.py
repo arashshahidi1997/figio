@@ -21,6 +21,7 @@ class PanelResult(BaseModel):
 
     svg: str
     bbox_mm: tuple[float, float, float, float]  # x, y, width, height
+    viewbox: tuple[float, float, float, float] | None = None  # original SVG viewBox (internal coords)
     anchors: dict[str, tuple[float, float]] = Field(default_factory=dict)
     semantic_ids: list[str] = Field(default_factory=list)
 

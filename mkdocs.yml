@@ -7,8 +7,11 @@ nav:
   - Home: index.md
   - Guide:
     - Quick Start: guide/quickstart.md
+    - Multi-Panel Tutorial: guide/tutorial-multipanel.md
     - Spec Format: guide/spec-format.md
+    - Target Profiles: guide/targets.md
     - Panel Adapters: guide/adapters.md
+    - Troubleshooting: guide/troubleshooting.md
   - Reference:
     - CLI: reference/cli.md
     - MCP Tools: reference/mcp-tools.md
