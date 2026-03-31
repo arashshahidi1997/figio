@@ -1,0 +1,14 @@
+site_name: figio
+docs_dir: docs
+theme:
+  name: material
+
+nav:
+  - Home: index.md
+  - Guide:
+    - Quick Start: guide/quickstart.md
+    - Spec Format: guide/spec-format.md
+    - Panel Adapters: guide/adapters.md
+  - Reference:
+    - CLI: reference/cli.md
+    - MCP Tools: reference/mcp-tools.md
