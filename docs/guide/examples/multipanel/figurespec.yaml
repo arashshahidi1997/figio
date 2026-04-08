@@ -44,6 +44,6 @@ figure:
       text: "Figure 1. Multi-panel figure demonstrating figio layout, constraints, and annotations. (A) Time-series signal. (B) Condition means ± SEM. (C) Correlation matrix. (D) Scatter plot with regression line."
 
   style:
-    font_family: Helvetica
+    font_family: sans-serif
     font_size_pt: 8
     panel_gap_mm: 4

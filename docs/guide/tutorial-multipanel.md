@@ -204,18 +204,17 @@ figio build figurespec.yaml --format svg,pdf,png
 Expected output:
 
 ```
-Building fig_multipanel...
-  Rendering panel: line       ✓
-  Rendering panel: bar        ✓
-  Rendering panel: heatmap    ✓
-  Rendering panel: scatter    ✓
-  Composing layout (2×2 grid)...
-  Applying constraints...
-  Placing annotations...
-  Writing _build/fig_multipanel.svg
-  Writing _build/fig_multipanel.pdf
-  Writing _build/fig_multipanel.png
-Done.
+Built fig_multipanel
+  SVG: /path/to/_build/fig_multipanel.svg
+  PDF: /path/to/_build/fig_multipanel.pdf
+  PNG: /path/to/_build/fig_multipanel.png
+  Time: 3.21s
+  [PASS] figure_width: Figure width 183.0mm matches target 183.0mm
+  [PASS] panel_overflow_line: Panel 'line' fits within figure width
+  [PASS] panel_overflow_bar: Panel 'bar' fits within figure width
+  [PASS] panel_overflow_heatmap: Panel 'heatmap' fits within figure width
+  [PASS] panel_overflow_scatter: Panel 'scatter' fits within figure width
+  [PASS] dpi: Target DPI is 300 (checked at export time)
 ```
 
 The `--format svg,pdf,png` flag exports all three formats. Omit it to get SVG only.
@@ -244,26 +243,26 @@ figio checks:
 
 | Check | What it verifies |
 |-------|-----------------|
-| Figure width | Composed SVG ≤ 183 mm |
-| Figure height | ≤ max_height_mm (if set) |
-| Font size | All text ≥ 5 pt |
-| Panel overflow | No panel extends beyond figure bounds |
+| `figure_width` | Composed SVG width matches target (±0.5 mm) |
+| `max_height` | Height ≤ `max_height_mm` (if profile sets a limit) |
+| `panel_overflow_<id>` | Each panel fits within figure bounds |
+| `dpi` | Reports target DPI (enforced at export time) |
 
 A passing result:
 
 ```
-Validating fig_multipanel against nature_double_column...
-  ✓ Width: 183.0 mm (limit: 183 mm)
-  ✓ Font size: 8 pt (min: 5 pt)
-  ✓ No overflow detected
-All checks passed.
+[PASS] figure_width: Figure width 183.0mm matches target 183.0mm
+[PASS] panel_overflow_line: Panel 'line' fits within figure width
+[PASS] panel_overflow_bar: Panel 'bar' fits within figure width
+[PASS] panel_overflow_heatmap: Panel 'heatmap' fits within figure width
+[PASS] panel_overflow_scatter: Panel 'scatter' fits within figure width
+[PASS] dpi: Target DPI is 300 (checked at export time)
 ```
 
-A failing result identifies the specific violation so you can adjust style
-tokens or panel dimensions:
+A failing result identifies the specific violation:
 
 ```
-  ✗ Width: 185.2 mm exceeds limit 183 mm
+[FAIL] figure_width: Figure width 185.2mm does not match target 183.0mm
 ```
 
 ---

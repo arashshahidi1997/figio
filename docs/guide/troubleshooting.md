@@ -46,15 +46,17 @@ figure_width 200.0 mm exceeds target max 89.0 mm
    figio validate figurespec.yaml --target nature_double_column
    ```
 2. Reduce the number of columns or panel sizes so the figure fits.
-3. Define a custom target profile with relaxed constraints:
+3. Define a custom inline target profile in your spec:
    ```yaml
-   targets:
-     my_journal:
-       figure_width_mm: [85, 175]
-       figure_height_mm: [20, 234]
-       font_size_pt: [6, 8]
+   figure:
+     id: fig1
+     target:
+       name: my_journal
+       figure_width_mm: 175
+       min_font_pt: 6
+       dpi: 300
+     panels: { ... }
    ```
-   Then reference it with `--target my_journal`.
 
 
 ## "CairoSVG not found"
@@ -90,21 +92,20 @@ AttributeError: module 'panels.my_panel' has no attribute 'make_figure'
 ```
 or the panel script runs but produces no output file.
 
-**Cause:** figio's Matplotlib adapter expects each panel script to expose a `make_figure(output_path, **params)` function. Running the script directly as `python panels/my_panel.py` will not invoke this function.
+**Cause:** figio's Matplotlib adapter expects each panel script to expose a `make_figure()` function that **returns** a Matplotlib `Figure` object. If the function is missing or has the wrong signature, the adapter falls back to script-based execution (capturing `plt.gcf()`), which may fail if no figure was created.
 
 **Fix:** Structure every panel script as a callable module:
 
 ```python
 import matplotlib.pyplot as plt
 
-def make_figure(output_path, **params):
+def make_figure(**kwargs):
     fig, ax = plt.subplots()
     # ... draw content ...
-    fig.savefig(output_path)
-    plt.close(fig)
+    return fig
 ```
 
-The adapter calls `make_figure(output_path)`, passing the path where the SVG should be written. Do not call `plt.show()` inside `make_figure` — it will block the build.
+The adapter calls `make_figure()`, captures the returned figure as SVG, and closes it. Do not call `plt.show()` or `fig.savefig()` inside `make_figure` — figio handles SVG export internally.
 
 
 ## "Cache not invalidating" / stale output
@@ -167,7 +168,7 @@ Duplicate IDs within a single panel SVG indicate a Matplotlib or adapter bug, no
 |---|---|
 | `font_family` | `font.family` |
 | `font_size_pt` | `font.size` |
-| `axes_linewidth` | `axes.linewidth` |
+| `line_weight` | `lines.linewidth` |
 
 figio injects these as `rcParams` before calling `make_figure`. However, Matplotlib resolves font names against the fonts installed on the system. If the requested font is not available, Matplotlib silently falls back to DejaVu Sans.
 

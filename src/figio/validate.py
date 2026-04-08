@@ -108,6 +108,11 @@ def _parse_font_size_pt(value: str) -> float | None:
             return float(value[:-2]) * _PT_PER_PX
         except ValueError:
             return None
+    if value.endswith("mm"):
+        try:
+            return float(value[:-2]) / 0.3528  # 1pt = 0.3528mm
+        except ValueError:
+            return None
     # bare number → px
     try:
         return float(value) * _PT_PER_PX
@@ -119,6 +124,8 @@ def _extract_font_sizes_from_svg(svg: str) -> list[float]:
     """Extract all font sizes (in pt) from an SVG string.
 
     Parses both inline ``font-size`` attributes and ``<style>`` CSS rules.
+    Skips elements inside the ``#annotations`` group (figio-controlled, uses
+    viewBox user units not pt).
     """
     sizes: list[float] = []
 
@@ -130,7 +137,16 @@ def _extract_font_sizes_from_svg(svg: str) -> list[float]:
 
     ns = {"svg": "http://www.w3.org/2000/svg"}
 
+    # Collect annotation group element IDs to skip
+    _annotation_elems: set[ET.Element] = set()
+    for g in root.iter():
+        if g.get("id") == "annotations":
+            _annotation_elems.update(g.iter())
+
     for elem in root.iter():
+        if elem in _annotation_elems:
+            continue
+
         # Direct font-size attribute
         for attr_name in ("font-size", "{http://www.w3.org/2000/svg}font-size"):
             val = elem.get(attr_name)
@@ -306,19 +322,19 @@ def _srgb_to_linear(c: float) -> float:
 
 
 def _simulate_deuteranopia(r: float, g: float, b: float) -> tuple[float, float, float]:
-    """Approximate deuteranopia simulation via Brettel/Vienot simplified matrix.
+    """Approximate deuteranopia simulation via Vienot 1999 matrix.
 
-    Uses the Vienot 1999 simulation matrix for deuteranopia.
-    Input/output in linear sRGB [0, 1].
+    Combined sRGB → simulated-sRGB matrix for deuteranopia (from Vienot,
+    Brettel, Mollon 1999, Table 2). Input/output in sRGB [0, 1].
     """
     rl = _srgb_to_linear(r)
     gl = _srgb_to_linear(g)
     bl = _srgb_to_linear(b)
 
-    # Vienot deuteranopia matrix
-    sr = 0.625 * rl + 0.375 * gl + 0.0 * bl
-    sg = 0.7 * rl + 0.3 * gl + 0.0 * bl
-    sb = 0.0 * rl + 0.3 * gl + 0.7 * bl
+    # Vienot 1999 combined RGB→simulated-RGB matrix for deuteranopia
+    sr = 0.29275 * rl + 0.70725 * gl + 0.00000 * bl
+    sg = 0.29275 * rl + 0.70725 * gl + 0.00000 * bl
+    sb = -0.02234 * rl + 0.02234 * gl + 1.00000 * bl
 
     return (
         max(0.0, min(1.0, sr)),
@@ -413,7 +429,11 @@ def _check_colorblind(svg: str) -> list[ValidationCheck]:
             sim2 = _simulate_deuteranopia(r2, g2, b2)
             sim_dist = _color_distance(sim1, sim2)
 
-            if sim_dist < 5:
+            # Flag if simulated distance drops below threshold OR
+            # the ratio of simulated/original distance is very small
+            # (colors that were distinct become much more similar)
+            ratio = sim_dist / orig_dist if orig_dist > 0 else 1.0
+            if sim_dist < 5 or (ratio < 0.15 and orig_dist > 50):
                 issues.append(f"{checked[i]} and {checked[j]}")
 
     if issues:

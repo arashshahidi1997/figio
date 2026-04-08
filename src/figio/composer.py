@@ -79,9 +79,27 @@ def compose(
     # 2. Apply constraints
     _apply_constraints(positions, panels, layout.constraints, warnings)
 
-    # 3. Compute total figure dimensions
+    # 3. Reserve space for annotations (labels above, caption below)
+    _pt_to_mm = 0.3528
+    font_size_mm = (style.font_size_pt or 8.0) * _pt_to_mm
+    label_size_mm = font_size_mm * 1.25
+
+    top_margin = 0.0
+    bottom_margin = 0.0
+    has_labels = any(a.type == AnnotationType.panel_label for a in annotations)
+    has_caption = any(a.type == AnnotationType.caption for a in annotations)
+    if has_labels:
+        top_margin = label_size_mm + 2.0  # label height + gap
+    if has_caption:
+        bottom_margin = font_size_mm + 7.0  # caption height + gap
+
+    # Shift all panel positions down by top_margin
+    if top_margin > 0:
+        for pos in positions.values():
+            pos.y += top_margin
+
     fig_width = target.figure_width_mm
-    fig_height = _compute_figure_height(positions)
+    fig_height = _compute_figure_height(positions) + bottom_margin
 
     # 4. Merge defs from all panels
     all_svgs = [p.svg for p in panels.values()]
@@ -126,10 +144,9 @@ def compose(
         content_parts.append(f'  <g id="annotations">\n{annotation_svg}\n  </g>')
     content = "\n".join(content_parts)
 
-    # 8. Build font CSS
-    css = f'text, tspan {{ font-family: "{style.font_family}"; }}'
-    if style.font_size_pt:
-        css += f'\ntext {{ font-size: {style.font_size_pt}pt; }}'
+    # 8. Build font CSS — scoped to annotation layer only;
+    # panel text is sized within its own nested <svg> coordinate space
+    css = f'#annotations text, #annotations tspan {{ font-family: "{style.font_family}"; }}'
 
     # 9. Make document
     svg = make_svg_document(content, fig_width, fig_height, defs=merged_defs)
@@ -327,8 +344,10 @@ def _build_annotations(
 ) -> str:
     """Build SVG elements for annotations."""
     parts: list[str] = []
-    font_size = style.font_size_pt or 8.0
-    label_size = font_size + 2  # Labels slightly larger
+    # Convert pt to mm for SVG user-unit viewBox (1pt = 0.3528mm)
+    _pt_to_mm = 0.3528
+    font_size_mm = (style.font_size_pt or 8.0) * _pt_to_mm
+    label_size_mm = font_size_mm * 1.25  # Labels slightly larger
 
     for ann in annotations:
         if ann.type == AnnotationType.panel_label:
@@ -342,7 +361,7 @@ def _build_annotations(
             y = pos.y + dy
             parts.append(
                 f'    <text x="{x:.2f}" y="{y:.2f}" '
-                f'font-size="{label_size:.1f}pt" font-weight="bold">'
+                f'font-size="{label_size_mm:.2f}" font-weight="bold">'
                 f'{ann.text}</text>'
             )
 
@@ -353,7 +372,7 @@ def _build_annotations(
             y = fig_h + (ann.position[1] if len(ann.position) > 1 else 5.0)
             parts.append(
                 f'    <text x="{x:.2f}" y="{y:.2f}" '
-                f'font-size="{font_size:.1f}pt">'
+                f'font-size="{font_size_mm:.2f}">'
                 f'{ann.text}</text>'
             )
 
@@ -380,7 +399,7 @@ def _build_annotations(
                 y = pos.y + (ann.position[1] if len(ann.position) > 1 else -3.0)
                 parts.append(
                     f'    <text x="{x:.2f}" y="{y:.2f}" '
-                    f'font-size="{font_size:.1f}pt" text-anchor="middle">'
+                    f'font-size="{font_size_mm:.2f}" text-anchor="middle">'
                     f'{ann.text}</text>'
                 )
 
@@ -408,7 +427,7 @@ def _build_annotations(
                     y_text = y_top - 1.5
                     parts.append(
                         f'    <text x="{x_mid:.2f}" y="{y_text:.2f}" '
-                        f'font-size="{font_size:.1f}pt" text-anchor="middle">'
+                        f'font-size="{font_size_mm:.2f}" text-anchor="middle">'
                         f'{ann.text}</text>'
                     )
 

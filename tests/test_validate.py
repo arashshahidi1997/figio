@@ -198,9 +198,10 @@ class TestExtractColors:
 
 class TestColorblindCheck:
     def test_red_green_fail(self):
+        # Use matplotlib tab10 red/green — a realistic confusable pair
         svg = _minimal_svg(
-            '<rect fill="#ff0000" width="10" height="10"/>'
-            '<rect fill="#00ff00" width="10" height="10"/>'
+            '<rect fill="#d62728" width="10" height="10"/>'
+            '<rect fill="#2ca02c" width="10" height="10"/>'
         )
         checks = _check_colorblind(svg)
         assert len(checks) == 1
