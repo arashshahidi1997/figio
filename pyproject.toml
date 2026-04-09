@@ -3,17 +3,34 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "figio"
+name = "figio-tools"
 version = "0.1.0"
-description = "Build orchestrator for reproducible scientific figures"
+description = "Declarative build orchestrator for reproducible scientific figures"
 readme = "README.md"
 requires-python = ">=3.11"
-authors = [{ name = "Arash" }]
-license = { text = "MIT" }
+authors = [{ name = "Arash Shahidi", email = "A.Shahidi@campus.lmu.de" }]
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["figure", "scientific", "svg", "matplotlib", "reproducible", "composition"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
 dependencies = [
     "pydantic>=2.0",
     "pyyaml>=6.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/arashshahidi1997/figio"
+Documentation = "https://arashshahidi1997.github.io/figio/"
+Repository = "https://github.com/arashshahidi1997/figio"
+Issues = "https://github.com/arashshahidi1997/figio/issues"
 
 [project.scripts]
 figio = "figio.cli:main"
@@ -22,7 +39,7 @@ figio = "figio.cli:main"
 dev = ["pytest", "build", "twine"]
 mpl = ["matplotlib>=3.7"]
 export = ["cairosvg>=2.7"]
-all = ["figio[mpl]", "figio[export]"]
+all = ["figio-tools[mpl]", "figio-tools[export]"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
