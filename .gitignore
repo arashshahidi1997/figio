@@ -1,9 +1,20 @@
 # >>> projio >>>
+*.ipynb
 .claude/settings.json
+.ipynb_checkpoints/
 .mcp.json
+.pipeio/runs.json
 .projio.mkdocs.yml
+.projio/biblio/logs/
+.projio/codio/mirrors/
+.projio/filters/
 .projio/indexio/index/
+.projio/indexio/jobs/
+.projio/render/compiled.bib
+.projio/render/pandoc-defaults.yaml
 .projio/servers.json
 .projio/site/
+.snakemake/
+docs/pipelines/mkdocs.yml
 site/
 # <<< projio <<<

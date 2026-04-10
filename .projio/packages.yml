@@ -17,3 +17,6 @@ packages:
   claude:
     enabled: true
     path: .projio/claude
+  figio:
+    enabled: true
+    path: .projio/figio

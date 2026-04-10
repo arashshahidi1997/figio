@@ -2,8 +2,8 @@ pydantic>=2.0
 pyyaml>=6.0
 
 [all]
-figio[mpl]
-figio[export]
+figio-tools[mpl]
+figio-tools[export]
 
 [dev]
 pytest
