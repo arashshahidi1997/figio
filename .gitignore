@@ -18,3 +18,10 @@
 docs/pipelines/mkdocs.yml
 site/
 # <<< projio <<<
+
+# Python packaging artifacts
+*.egg-info/
+build/
+dist/
+__pycache__/
+.pytest_cache/
