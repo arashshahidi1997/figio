@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-mpl = pytest.importorskip("matplotlib")  # noqa: F841
+mpl = pytest.importorskip("matplotlib", reason="needs figio-tools[mpl] (matplotlib)")  # noqa: F841
 
 from figio.adapters import PanelResult
 from figio.adapters.matplotlib import MatplotlibAdapter, _strip_mpl_boilerplate

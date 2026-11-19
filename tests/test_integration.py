@@ -12,6 +12,9 @@ import yaml
 from figio.build import build
 from figio.schema import FigureSpec
 
+# Every figure here renders matplotlib panels; matplotlib comes with figio-tools[mpl].
+pytest.importorskip("matplotlib", reason="needs figio-tools[mpl] (matplotlib)")
+
 
 # ---------------------------------------------------------------------------
 # Helpers
