@@ -21,7 +21,7 @@ FigureSpec (YAML) → Adapters → Panel SVGs → Composer → Composed SVG → 
 | SVG Utils | `svg_utils.py` | Defs merging, content extraction, document building, style injection |
 | Build | `build.py` | Orchestrates render → compose → export pipeline with file-level caching |
 | Cache | `cache.py` | SHA-256 content hashing, cache check/update |
-| Validate | `validate.py` | Checks against target profile (width, height, font size, overflow) |
+| Validate | `validate.py` | Checks against target profile (width, height, overflow, min font size, DPI, colorblind safety) |
 | Export | `export.py` | SVG → PDF/PNG via CairoSVG (optional dependency) |
 | CLI | `cli.py` | `figio build/validate/inspect/init` commands |
 | MCP | `mcp.py` | Tool functions for projio MCP server integration |

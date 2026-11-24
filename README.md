@@ -10,6 +10,12 @@ figio coordinates existing plotting libraries (Matplotlib, Vega-Lite, etc.) thro
 
 figio is an **orchestration system**, not a rendering engine. Panels are opaque — figio doesn't reach inside them. It coordinates their output into a composed figure with validated positioning, annotations, and journal compliance checks.
 
+## Status: pre-alpha, parked
+
+figio is pre-alpha and parked as of 2026-11-19. The package is complete at its current scope: its tests pass and its filed issues are implemented. It gets maintenance only, with no new features, until a real figure needs it.
+
+The reason: when every panel comes from one matplotlib script, `gridspec` or `subplot_mosaic` already composes the figure, so figio adds little there. Its distinct value is composing panels from different sources (a hand-made SVG schematic beside data panels) into one figure checked against a journal profile. That case has not come up yet. The first manuscript figure that mixes a schematic with data panels will be built with figio as a trial, and the decision is revisited after it. The full reasoning is in projio's `docs/specs/figio-decision.md`.
+
 ## Install
 
 ```bash
